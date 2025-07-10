@@ -71,8 +71,14 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     val nav_version = "2.7.7"
+    val room_version = "2.6.1"
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
+
+    implementation("androidx.room:room-runtime:$room_version")
+
+    ksp("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
 
 
     implementation("com.google.dagger:hilt-android:2.47")

@@ -55,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModelProvider
 
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vaibhav.randomstringgenerator.data.db.StringModelEntity
 import com.vaibhav.randomstringgenerator.data.model.RandomString
 
 import com.vaibhav.randomstringgenerator.data.repository.StringRepository
@@ -63,6 +64,7 @@ import com.vaibhav.randomstringgenerator.utils.UiState
 
 import com.vaibhav.randomstringgenerator.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 
 @AndroidEntryPoint
@@ -85,6 +87,8 @@ fun MainScreen() {
     val viewModel = viewModel<MainViewModel>()
     val strings = viewModel.randomString.collectAsState().value
 
+    val dbString = viewModel.dbStrings.collectAsState().value
+
     var isDialogOpen by remember {
         mutableStateOf(false)
     }
@@ -93,9 +97,8 @@ fun MainScreen() {
         mutableStateOf(false)
     }
 
-    val tempList = remember {
-        mutableStateListOf<RandomString>()
-    }
+
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = strings) {
        when(strings){
@@ -110,7 +113,7 @@ fun MainScreen() {
                isLoadingDialogVisible=true
            }
            is UiState.Success -> {
-               tempList.add(strings.data)
+
                isLoadingDialogVisible=false
 
            }
@@ -144,7 +147,7 @@ fun MainScreen() {
             .fillMaxWidth()
             .padding(innerPadding)){
 
-            if (tempList.isEmpty()){
+            if (dbString.isEmpty()){
                 Box(modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp), contentAlignment = Alignment.Center){
@@ -174,15 +177,17 @@ fun MainScreen() {
                                 fontSize = 20.sp
                             )
 
-                            Button(onClick = { tempList.clear() }) {
+                            Button(onClick = { viewModel.deleteAll() }) {
                                 Text("Delete All")
                             }
                         }
                     }
 
-                    items(tempList.reversed()) {
+                    items(dbString.reversed()) {
                         RandomTextCard(it){item->
-                            tempList.remove(item)
+                            scope.launch {
+                                viewModel.delete(item)
+                            }
                         }
                     }
                 }
@@ -197,8 +202,8 @@ fun MainScreen() {
 
 
 @Composable
-fun RandomTextCard(randomString: RandomString,onDeleteClick : (RandomString) -> Unit) {
-    val model = randomString.randomText
+fun RandomTextCard(randomString: StringModelEntity,onDeleteClick : (StringModelEntity) -> Unit) {
+
 
     Card(
         modifier = Modifier
@@ -210,20 +215,20 @@ fun RandomTextCard(randomString: RandomString,onDeleteClick : (RandomString) -> 
             .fillMaxWidth()
             .padding(16.dp)) {
             Text(
-                text = "${model?.value}",
+                text = "${randomString?.value}",
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
             Text(
-                text = "Length: ${model?.length}",
+                text = "Length: ${randomString?.length}",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
 
             Text(
-                text = "Created: ${model?.created}",
+                text = "Created: ${randomString?.time}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
